@@ -42,8 +42,23 @@ When creating new features, please use the following naming convention for branc
   - [link](https://ourworldindata.org/grapher/share-of-population-urban)
   - Share of the population living in urban areas, 2022
 - `physicians-per-1000-people.csv`:
+
   - [link](https://ourworldindata.org/grapher/physicians-per-1000-people)
   - Medical doctors per 1,000 people, 2021
+
+  https://ourworldindata.org/grapher/urban-share-european-commission
+
+  https://ourworldindata.org/grapher/suicide-rate-who-mdb
+
+  https://ourworldindata.org/grapher/migrant-stock-total
+
+  https://ourworldindata.org/grapher/children-per-woman-un
+
+  https://ourworldindata.org/working-hours
+
+  https://ourworldindata.org/grapher/minutes-spent-on-leisure
+
+  https://ourworldindata.org/age-structure
 
 </details>
 
