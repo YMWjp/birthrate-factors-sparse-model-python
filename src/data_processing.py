@@ -1,52 +1,74 @@
 import pandas as pd
 import os
-
-# Columns that are not needed and will be dropped from the DataFrame
+import json
+# Constants for data processing
 UNUSED_COLUMNS = ['900793-annotations', 'Continent', 'Code']
+DATA_START_YEAR = 1990
+RAW_DATA_DIR = '../data/raw'
+PROCESSED_DATA_DIR = '../data/processed'
+OUTPUT_FILENAME = 'combined_data.csv'
+COUNTRIES_CONFIG_PATH = '../config/countries.json'
+
+def load_oecd_countries():
+    try:
+        with open(COUNTRIES_CONFIG_PATH, 'r') as f:
+            config = json.load(f)
+        return set(config['oecd_countries'])
+    except Exception as e:
+        print(f"Error loading OECD countries configuration: {str(e)}")
+        raise
 
 def read_and_process_csv(file, common_countries):
-    # Read the CSV file into a DataFrame
-    df = pd.read_csv(os.path.join('../data/raw', file))
-    # Filter the DataFrame to only include rows with entities in common_countries
-    df = df[df['Entity'].isin(common_countries)]
-    # Filter the DataFrame to only include rows with Year >= 1990
-    df = df[df['Year'] >= 1990]
-    # Drop the unused columns, ignoring errors if they don't exist
-    df.drop(columns=UNUSED_COLUMNS, errors='ignore', inplace=True)
-    # Group by 'Entity' and 'Year', taking the first occurrence of each group
-    return df.groupby(['Entity', 'Year']).agg('first').reset_index()
+    try:
+        # Read the CSV file into a DataFrame
+        df = pd.read_csv(os.path.join(RAW_DATA_DIR, file))
+        
+        # Filter and preprocess the DataFrame
+        df = (df[df['Entity'].isin(common_countries)]
+              .query(f'Year >= {DATA_START_YEAR}')
+              .drop(columns=UNUSED_COLUMNS, errors='ignore'))
+        
+        return df.groupby(['Entity', 'Year']).agg('first').reset_index()
+    except Exception as e:
+        print(f"Error processing file {file}: {str(e)}")
+        return None
 
 def process_csvs():
-    # List all CSV files in the raw data directory
-    csv_files = [f for f in os.listdir('../data/raw') if f.endswith('.csv')]
+    # List of OECD member countries
+    oecd_countries = load_oecd_countries()
 
-    # OECD countries
-    oecd_countries = {'Australia', 'Austria', 'Belgium', 'Canada', 'Chile', 'Colombia', 'Costa Rica', 
-                    'Czechia', 'Denmark', 'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Hungary', 
-                    'Iceland', 'Ireland', 'Israel', 'Italy', 'Japan', 'Latvia', 'Lithuania', 'Luxembourg', 
-                    'Mexico', 'Netherlands', 'New Zealand', 'Norway', 'Poland', 'Portugal', 'Slovakia', 
-                    'Slovenia', 'South Korea', 'Spain', 'Sweden', 'Switzerland', 'Turkey', 'United Kingdom', 
-                    'United States'}
+    try:
+        # Process birth rate data first
+        birth_rate_file = 'birth-rate-vs-death-rate.csv'
+        birth_rate_df = read_and_process_csv(birth_rate_file, oecd_countries)
+        
+        if birth_rate_df is None:
+            raise ValueError("Failed to load birth rate data")
 
-    # Specify the file that contains birth rate data
-    birth_rate_file = 'birth-rate-vs-death-rate.csv'
-    # Process the birth rate file
-    birth_rate_df = read_and_process_csv(birth_rate_file, oecd_countries)
+        # Process and merge other CSV files
+        csv_files = [
+            f for f in os.listdir(RAW_DATA_DIR) 
+            if f.endswith('.csv') and f != birth_rate_file
+        ]
 
-    # Process and merge each CSV file with the birth rate data
-    for file in csv_files:
-        if file == birth_rate_file:
-            continue
-        print(f"Processing file: {file}")
-        try:
+        for file in csv_files:
+            print(f"Processing file: {file}")
             df = read_and_process_csv(file, oecd_countries)
-            birth_rate_df = pd.merge(birth_rate_df, df, on=['Entity', 'Year'], how='left', suffixes=('', f'_{file}'))
-        except Exception as e:
-            print(f"Error processing {file}: {str(e)}")
-            continue
+            
+            if df is not None:
+                birth_rate_df = pd.merge(
+                    birth_rate_df, 
+                    df, 
+                    on=['Entity', 'Year'], 
+                    how='left', 
+                    suffixes=('', f'_{file}')
+                )
 
-    # Create the processed data directory if it doesn't exist
-    if not os.path.exists('../data/processed'):
-        os.makedirs('../data/processed')
-    # Save the combined DataFrame to a CSV file
-    birth_rate_df.to_csv('../data/processed/combined_data.csv', index=False)
+        # Create output directory and save results
+        os.makedirs(PROCESSED_DATA_DIR, exist_ok=True)
+        output_path = os.path.join(PROCESSED_DATA_DIR, OUTPUT_FILENAME)
+        birth_rate_df.to_csv(output_path, index=False)
+        print(f"Processing completed. Output saved to: {output_path}")
+        
+    except Exception as e:
+        print(f"Critical error during data processing: {str(e)}")
