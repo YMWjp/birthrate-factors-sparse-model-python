@@ -1,13 +1,13 @@
 Feature,Coefficient
-GDP per capita,-2.2847076212171195e-06
-Share of population living in urban areas,0.00566017247713538
-Public spending on education as a share of GDP,0.11823829838267487
-"Physicians (per 1,000 people)",-0.002295003854438745
-Total days of leave available for the mother,-0.00015676589264131265
-Average annual working hours per worker,2.6806036361069138e-05
-Gender Development Index,-0.7902241744717144
-Human Development Index,1.563423736136159
-"Labor force participation rate, female (% of female population ages 15+) (modeled ILO estimate)",0.012670637246935823
-"Age-standardized death rate from self-inflicted injuries per 100,000 population - Sex: Both sexes - Age group: all ages",-0.011602213349641826
-Gender Inequality Index,1.821228150502967
-Immigrant Ratio,0.9026909687755639
+GDP per capita,-1.9864323812301153e-05
+Share of population living in urban areas,0.0019205498808435096
+Public spending on education as a share of GDP,-0.00015652447969245796
+"Physicians (per 1,000 people)",-0.0007028977066709649
+Total days of leave available for the mother,0.008998514871751363
+Average annual working hours per worker,0.0092443457398779
+Gender Development Index,-2.340439138575238e-05
+Human Development Index,-1.7798507893207127e-05
+"Labor force participation rate, female (% of female population ages 15+) (modeled ILO estimate)",-0.005527955054271761
+"Age-standardized death rate from self-inflicted injuries per 100,000 population - Sex: Both sexes - Age group: all ages",0.0012033433496157343
+Gender Inequality Index,8.786664548587198e-05
+Immigrant Ratio,-1.0404538107186518e-05
