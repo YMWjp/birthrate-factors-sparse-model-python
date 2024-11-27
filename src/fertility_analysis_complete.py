@@ -88,22 +88,113 @@ numeric_cols = filtered_data.select_dtypes(include=[np.number]).columns
 filtered_data = remove_outliers(filtered_data, numeric_cols)
 
 # 相関分析
-plt.figure(figsize=(12, 10))
+plt.figure(figsize=(15, 12))  # サイズを大きくする
+
+# 相関行列の計算
 correlation_matrix = filtered_data.select_dtypes(include=[np.number]).corr()
-sns.heatmap(correlation_matrix,
-    annot=True,
-    fmt=".2f",
-    cmap="coolwarm",
-    xticklabels=correlation_matrix.columns,
-    yticklabels=correlation_matrix.columns,
-    annot_kws={'size': 8}
+
+# Fertilityと他の変数との相関のみを抽出
+fertility_correlations = correlation_matrix['Fertility'].sort_values(ascending=False)
+selected_columns = ['Fertility'] + fertility_correlations.index[1:].tolist()
+selected_correlation_matrix = correlation_matrix.loc[selected_columns, selected_columns]
+
+# ヒートマップの作成
+sns.heatmap(selected_correlation_matrix,
+    annot=True,  # 相関係数を表示
+    fmt=".3f",   # 小数点3桁まで表示
+    cmap="RdBu_r",  # Red-Blue colormap
+    center=0,    # 0を中心とした色付け
+    square=True, # 正方形のセル
+    xticklabels=selected_correlation_matrix.columns,
+    yticklabels=selected_correlation_matrix.columns,
+    annot_kws={'size': 10}  # 注釈のフォントサイズを大きく
 )
+
+# グラフの体裁を整える
 plt.xticks(rotation=45, ha='right')
 plt.yticks(rotation=0)
-plt.title("Correlation Heatmap: Fertility Rate and Related Variables", pad=20)
+plt.title("Correlation Heatmap: Fertility Rate and Related Variables", pad=20, fontsize=14)
+
+# 余白の調整
 plt.tight_layout()
-plt.savefig("../results/figures/correlation_heatmap.png", dpi=300, bbox_inches='tight')
+
+# 高解像度で保存
+plt.savefig("../results/figures/fertility_correlation_heatmap.png", 
+    dpi=300, 
+    bbox_inches='tight'
+)
 plt.close()
+
+# 相関係数の絶対値でソート（Fertilityとの相関）
+abs_correlations = abs(fertility_correlations)
+top_correlations = fertility_correlations[abs_correlations.sort_values(ascending=False)[1:].index]
+
+# 上位2つの正の相関と負の相関を取得
+positive_corr = top_correlations[top_correlations > 0][:2]
+negative_corr = top_correlations[top_correlations < 0][:2]
+
+# 散布図の作成
+fig, axes = plt.subplots(2, 2, figsize=(15, 15))
+fig.suptitle('Strongest Correlations with Fertility Rate', fontsize=16, y=1.02)
+
+# 正の相関をプロット
+for i, (var, corr) in enumerate(positive_corr.items()):
+    sns.scatterplot(
+        data=filtered_data,
+        x=var,
+        y='Fertility',
+        ax=axes[0, i],
+        alpha=0.6
+    )
+    axes[0, i].set_title(f'{var}\nCorrelation: {corr:.3f}')
+    axes[0, i].grid(True, alpha=0.3)
+    
+    # 回帰直線を追加
+    sns.regplot(
+        data=filtered_data,
+        x=var,
+        y='Fertility',
+        ax=axes[0, i],
+        scatter=False,
+        color='red',
+        line_kws={'linestyle': '--'}
+    )
+
+# 負の相関をプロット
+for i, (var, corr) in enumerate(negative_corr.items()):
+    sns.scatterplot(
+        data=filtered_data,
+        x=var,
+        y='Fertility',
+        ax=axes[1, i],
+        alpha=0.6
+    )
+    axes[1, i].set_title(f'{var}\nCorrelation: {corr:.3f}')
+    axes[1, i].grid(True, alpha=0.3)
+    
+    # 回帰直線を追加
+    sns.regplot(
+        data=filtered_data,
+        x=var,
+        y='Fertility',
+        ax=axes[1, i],
+        scatter=False,
+        color='red',
+        line_kws={'linestyle': '--'}
+    )
+
+plt.tight_layout()
+plt.savefig("../results/figures/fertility_top_correlations_scatter.png", 
+    dpi=300, 
+    bbox_inches='tight'
+)
+plt.close()
+
+# 相関係数を出力
+print("\nTop Positive Correlations with Fertility:")
+print(positive_corr)
+print("\nTop Negative Correlations with Fertility:")
+print(negative_corr)
 
 # マルチコリニアリティのチェック
 X_cols = [col for col in numeric_cols if col not in ['Fertility', 'Year']]
@@ -112,7 +203,7 @@ print("VIF Values:")
 print(vif_df)
 
 # 時系列による訓練データとテストデータの分割
-train_end_year = 2018
+train_end_year = 2000
 X = filtered_data[X_cols]
 y = filtered_data['Fertility']
 
@@ -162,83 +253,95 @@ mse_svm = mean_squared_error(y_test, y_pred_svm)
 mae_svm = mean_absolute_error(y_test, y_pred_svm)
 r2_svm = r2_score(y_test, y_pred_svm)
 
-# 予測結果の可視化（改善版）
-plt.figure(figsize=(12, 8))
+# Visualization of prediction results (improved version)
+plt.figure(figsize=(15, 10))
 
-# メインの散布図
+# Main scatter plot
 scatter = plt.scatter(y_test, y_pred_svm, 
     alpha=0.7, 
-    c=filtered_data.loc[y_test.index, 'Year'],  # 年による色分け
+    c=filtered_data.loc[y_test.index, 'Year'],
     cmap='viridis', 
-    s=100,
+    s=120,
     edgecolor='white',
     linewidth=0.5
 )
 
-# 完全一致線
+# Perfect prediction line
 plt.plot([y_test.min(), y_test.max()], 
     [y_test.min(), y_test.max()],
     "r--",
     lw=2,
-    label="理想的な予測線（実測値=予測値）"
+    label="Perfect Prediction Line (Actual = Predicted)"
 )
 
-# 誤差範囲の表示
+# Error range display
 plt.fill_between(
     [y_test.min(), y_test.max()],
     [y_test.min() - mae_svm, y_test.max() - mae_svm],
     [y_test.min() + mae_svm, y_test.max() + mae_svm],
     alpha=0.2,
     color='gray',
-    label=f'平均絶対誤差 (MAE) 範囲: ±{mae_svm:.3f}'
+    label=f'Mean Absolute Error (MAE) Range: ±{mae_svm:.3f}'
 )
 
-# データポイントのラベル付け
+# Data point labeling
 for i, (actual, predicted) in enumerate(zip(y_test, y_pred_svm)):
     year = filtered_data.loc[y_test.index[i], 'Year']
     country = filtered_data.loc[y_test.index[i], 'Country']
     
-    # 予測誤差が大きいポイントのみラベル表示
     error = abs(actual - predicted)
     if error > mae_svm:
         plt.annotate(f'{country}\n{int(year)}',
                     (actual, predicted),
-                    xytext=(5, 5),
+                    xytext=(7, 7),
                     textcoords='offset points',
-                    fontsize=8,
-                    bbox=dict(facecolor='white', edgecolor='none', alpha=0.7))
+                    fontsize=10,
+                    bbox=dict(facecolor='white', 
+                             edgecolor='none', 
+                             alpha=0.7,
+                             pad=2)
+                    )
 
-# グラフの装飾
-plt.colorbar(scatter, label='予測年')
-plt.title("出生率の実測値と予測値の比較\n(SVMモデルによる予測)", 
-    fontsize=14, 
+# Graph decorations
+cbar = plt.colorbar(scatter, label='Prediction Year')
+cbar.ax.tick_params(labelsize=10)
+
+plt.title("Comparison of Actual vs Predicted Fertility Rates\n(SVM Model Predictions)", 
+    fontsize=16, 
     pad=20
 )
-plt.xlabel("実測値 (出生率)", fontsize=12)
-plt.ylabel("予測値 (出生率)", fontsize=12)
+plt.xlabel("Actual Fertility Rate", fontsize=14)
+plt.ylabel("Predicted Fertility Rate", fontsize=14)
 
-# 統計情報の追加
-stats_text = f'モデル性能指標:\nR² = {r2_svm:.3f}\nMSE = {mse_svm:.3f}\nMAE = {mae_svm:.3f}'
+# Add statistical information
+stats_text = (f'Model Performance Metrics:\n'
+             f'R² = {r2_svm:.3f}\n'
+             f'MSE = {mse_svm:.3f}\n'
+             f'MAE = {mae_svm:.3f}')
 plt.text(0.05, 0.95, 
     stats_text,
     transform=plt.gca().transAxes,
-    bbox=dict(facecolor='white', edgecolor='gray', alpha=0.8),
+    bbox=dict(facecolor='white', 
+             edgecolor='gray', 
+             alpha=0.8,
+             pad=5),
     verticalalignment='top',
-    fontsize=10
+    fontsize=12
 )
 
-plt.legend(fontsize=10, loc='lower right')
+plt.xticks(fontsize=12)
+plt.yticks(fontsize=12)
+plt.legend(fontsize=12, loc='lower right', bbox_to_anchor=(1, 0.1))
 plt.grid(True, alpha=0.3, linestyle='--')
 plt.tight_layout()
 
-# グラフの保存
 plt.savefig("../results/figures/svm_actual_vs_predicted_improved.png", 
     dpi=300, 
     bbox_inches='tight'
 )
 plt.close()
 
-# 結果の出力
+# Output results
 print("\nSVM Model Results:")
 print(f"Mean Cross-validation R² score: {np.mean(svm_scores):.4f}")
 print(f"Test set MSE: {mse_svm:.4f}")
