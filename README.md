@@ -70,6 +70,8 @@ When creating new features, please use the following naming convention for branc
 
   https://ourworldindata.org/grapher/total-government-expenditure-on-education-gdp
 
+  https://ourworldindata.org/grapher/gender-wage-gap-oecd
+
 </details>
 
 ## Directory Structure
