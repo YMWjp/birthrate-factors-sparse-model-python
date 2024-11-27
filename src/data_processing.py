@@ -66,6 +66,18 @@ def process_csvs():
 
         # Create output directory and save results
         os.makedirs(PROCESSED_DATA_DIR, exist_ok=True)
+        
+        # 数値カラムのみを選択（'Year'は除外）
+        numeric_columns = birth_rate_df.select_dtypes(include=['float64', 'int64']).columns
+        numeric_columns = [col for col in numeric_columns if col != 'Year']
+        
+        # 各年の平均値を計算（数値カラムのみ）
+        yearly_means = birth_rate_df.groupby('Year')[numeric_columns].mean().reset_index()
+        yearly_means['Entity'] = 'OECD Average'
+        
+        # 平均値を元のデータフレームに追加
+        birth_rate_df = pd.concat([birth_rate_df, yearly_means], ignore_index=True)
+        
         output_path = os.path.join(PROCESSED_DATA_DIR, OUTPUT_FILENAME)
         birth_rate_df.to_csv(output_path, index=False)
         print(f"Processing completed. Output saved to: {output_path}")

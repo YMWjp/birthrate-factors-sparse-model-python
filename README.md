@@ -60,6 +60,16 @@ When creating new features, please use the following naming convention for branc
 
   https://ourworldindata.org/age-structure
 
+  https://ourworldindata.org/grapher/gender-development-index
+
+  https://ourworldindata.org/grapher/days-leave-available-for-mother
+
+  https://ourworldindata.org/grapher/days-leave-available-for-father
+
+  https://ourworldindata.org/grapher/gender-inequality-index-from-the-human-development-report
+
+  https://ourworldindata.org/grapher/total-government-expenditure-on-education-gdp
+
 </details>
 
 ## Directory Structure
