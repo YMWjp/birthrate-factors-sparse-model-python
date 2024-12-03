@@ -89,9 +89,7 @@ filtered_data = remove_outliers(filtered_data, numeric_cols)
 
 # 相関分析
 plt.figure(figsize=(15, 12))  # サイズを大きくする
-
-# 相関行列の計算
-correlation_matrix = filtered_data.select_dtypes(include=[np.number]).corr()
+correlation_matrix = filtered_data.select_dtypes(include=[np.number]).drop('Year', axis=1).corr()
 
 # Fertilityと他の変数との相関のみを抽出
 fertility_correlations = correlation_matrix['Fertility'].sort_values(ascending=False)
@@ -121,6 +119,57 @@ plt.tight_layout()
 # 高解像度で保存
 plt.savefig("../results/figures/fertility_correlation_heatmap.png", 
     dpi=300, 
+    bbox_inches='tight'
+)
+plt.close()
+
+# Create enhanced correlation bar plot
+plt.figure(figsize=(12, 8))
+fertility_correlations_sorted = fertility_correlations[1:].sort_values()
+
+# Plot horizontal bars with enhanced styling
+bars = plt.barh(range(len(fertility_correlations_sorted)), 
+                fertility_correlations_sorted,
+                color=['#FF6B6B' if x < 0 else '#4ECDC4' for x in fertility_correlations_sorted],
+                alpha=0.7)
+
+# Enhance graph decorations
+plt.yticks(range(len(fertility_correlations_sorted)), 
+           fertility_correlations_sorted.index,
+           fontsize=10)
+plt.xlabel('Correlation Coefficient', fontsize=12)
+plt.title('Correlation Coefficients with Fertility Rate', fontsize=14, pad=20)
+
+# Add value labels with improved positioning
+for i, v in enumerate(fertility_correlations_sorted):
+    plt.text(v + (0.01 if v >= 0 else -0.01), 
+             i,
+             f'{v:.3f}',
+             va='center',
+             ha='left' if v >= 0 else 'right',
+             fontsize=10,
+             bbox=dict(facecolor='white', 
+                      edgecolor='none', 
+                      alpha=0.7,
+                      pad=1))
+
+# Add enhanced grid and reference line
+plt.grid(True, alpha=0.3, axis='x', linestyle='--')
+plt.axvline(x=0, color='black', linestyle='-', linewidth=0.5)
+
+# Add explanatory text
+plt.text(0.02, -0.15, 
+         'Positive correlations indicate variables that increase with fertility rate\n'
+         'Negative correlations indicate variables that decrease with fertility rate',
+         transform=plt.gca().transAxes,
+         fontsize=10,
+         style='italic')
+
+plt.tight_layout()
+
+# Save high-resolution bar plot
+plt.savefig("../results/figures/fertility_correlation_barplot.png",
+    dpi=300,
     bbox_inches='tight'
 )
 plt.close()
