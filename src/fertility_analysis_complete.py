@@ -239,6 +239,38 @@ plt.savefig("../results/figures/fertility_top_correlations_scatter.png",
 )
 plt.close()
 
+# 相関係数をDataFrameとして整理
+correlation_results = pd.DataFrame({
+    'Variable': fertility_correlations.index[1:],
+    'Correlation_with_Fertility': fertility_correlations.values[1:],
+    'Absolute_Correlation': abs(fertility_correlations.values[1:])
+})
+
+# 絶対値の大きい順にソート
+correlation_results = correlation_results.sort_values('Absolute_Correlation', ascending=False)
+
+# 相関の強さの解釈を追加
+def interpret_correlation(corr):
+    abs_corr = abs(corr)
+    if abs_corr >= 0.8:
+        return "Very Strong"
+    elif abs_corr >= 0.6:
+        return "Strong"
+    elif abs_corr >= 0.4:
+        return "Moderate"
+    elif abs_corr >= 0.2:
+        return "Weak"
+    else:
+        return "Very Weak"
+
+correlation_results['Strength'] = correlation_results['Correlation_with_Fertility'].apply(interpret_correlation)
+correlation_results['Direction'] = correlation_results['Correlation_with_Fertility'].apply(
+    lambda x: "Positive" if x > 0 else "Negative"
+)
+
+# 結果をCSVファイルに保存
+correlation_results.to_csv("../results/csv/fertility_correlations.csv", index=False)
+
 # 相関係数を出力
 print("\nTop Positive Correlations with Fertility:")
 print(positive_corr)
